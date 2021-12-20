@@ -1,6 +1,7 @@
 package experiment.vector
 
 import scala.jdk.CollectionConverters._
+import scala.util.Random
 
 
 class TestVector extends munit.FunSuite {
@@ -106,5 +107,15 @@ class TestVector extends munit.FunSuite {
     intercept[IllegalStateException] {
       Vector.empty.pop_right()
     }
+  }
+
+  test("update") {
+    val e = Vector.empty.asInstanceOf[Vector[Any]]
+    var v = Range(0, 12000).foldLeft(e)((v, _) => v.push_right(-1))
+    val r = Random.shuffle(Range(0, v.size()).toIndexedSeq)
+    for(i <- Random.shuffle(Range(0, v.size()).toIndexedSeq)) {
+      v = v.update(i, r(i))
+    }
+    assertEquals(v.toList.asScala, r.toBuffer[Any])
   }
 }

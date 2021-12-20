@@ -43,6 +43,16 @@ public final class Vector<E> implements Iterable<E> {
     return (E) (i < left_size ? left.get(i) : right.get(i - left_size));
   }
 
+  public Vector<E> update(int i, E element) {
+    if(!(0 <= i && i < size())) { throw new IndexOutOfBoundsException(i); }
+    var left_size = left.extra.length + left.data_size;
+    if(i < left_size) {
+      return new Vector<>(left.update(i, element), right);
+    } else {
+      return new Vector<>(left, right.update(i - left_size, element));
+    }
+  }
+
   public java.util.List<E> toList() {
     var result = new java.util.ArrayList<E>(size());
     for(var e : this) { result.add(e); }
@@ -378,12 +388,34 @@ public final class Vector<E> implements Iterable<E> {
       return a[i & MASK];
     }
 
-    protected Object[] get_array(int i) {
+    private Object[] get_array(int i) {
       int shift = this.shift;
       Object[] a = data;
       while(shift > SHIFT) {
         shift -= SHIFT;
         a = (Object[]) a[(i >> shift) & MASK];
+      }
+      return a;
+    }
+
+    private Right<E> update(int i, Object element) {
+      if(i >= data_size) {
+        Object[] new_extra = extra.clone();
+        new_extra[i - data_size] = element;
+        return new Right<>(data_size, this.data, new_extra);
+      } else {
+        return new Right<>(data_size, update_array(this.data, this.shift, i, element), this.extra);
+      }
+    }
+
+    private Object[] update_array(Object[] a, int shift, int i, Object element) {
+      a = a.clone();
+      if(shift > SHIFT) {
+        shift -= SHIFT;
+        int j = (i >> shift) & MASK;
+        a[j] = update_array((Object[]) a[j], shift, i, element);
+      } else {
+        a[i & MASK] = element;
       }
       return a;
     }
@@ -434,13 +466,36 @@ public final class Vector<E> implements Iterable<E> {
       return a[i & MASK];
     }
 
-    protected Object[] get_array(int i) {
+    private Object[] get_array(int i) {
       i += ((1 << this.shift) - data_size);    // adjust because of right bias
       int shift = this.shift;
       Object[] a = data;
       while(shift > SHIFT) {
         shift -= SHIFT;
         a = (Object[]) a[((i >> shift) & MASK) - SIZE + a.length];
+      }
+      return a;
+    }
+
+    private Left<E> update(int i, Object element) {
+      if(i < extra.length) {
+        Object[] new_extra = extra.clone();
+        new_extra[i] = element;
+        return new Left<>(data_size, this.data, new_extra);
+      } else {
+        i += ((1 << this.shift) - data_size);    // adjust because of right bias
+        return new Left<>(data_size, update_array(this.data, this.shift, i, element), this.extra);
+      }
+    }
+
+    private Object[] update_array(Object[] a, int shift, int i, Object element) {
+      a = a.clone();
+      if(shift > SHIFT) {
+        shift -= SHIFT;
+        int j = ((i >> shift) & MASK) - SIZE + a.length;
+        a[j] = update_array((Object[]) a[j], shift, i, element);
+      } else {
+        a[i & MASK] = element;
       }
       return a;
     }

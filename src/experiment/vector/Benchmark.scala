@@ -79,6 +79,12 @@ class Runner(N: Int, M: Int) {
     require(sum == seq.grouped(2).map(s => s(0) - s(1)).sum)
     result += Result(b.name, "get", t2 - t1)
 
+    for((n, i) <- seq.zipWithIndex) {
+      v = b.update(v, n, i)
+    }
+    val t3 = System.currentTimeMillis()
+    result += Result(b.name, "update", t3 - t2)
+
     v = b.empty()
     for(i <- p) {
       if(i > 0) {
@@ -91,9 +97,9 @@ class Runner(N: Int, M: Int) {
         }
       }
     }
-    val t3 = System.currentTimeMillis()
+    val t4 = System.currentTimeMillis()
     require(b.size(v) == p.sum)
-    result += Result(b.name, "stack", t3 - t2)
+    result += Result(b.name, "stack", t4 - t3)
 
     try {
       v = b.empty()
@@ -108,9 +114,9 @@ class Runner(N: Int, M: Int) {
           }
         }
       }
-      val t4 = System.currentTimeMillis()
+      val t5 = System.currentTimeMillis()
       require(b.size(v) == p.sum)
-      result += Result(b.name, "queue", t4 - t3)
+      result += Result(b.name, "queue", t5 - t4)
     } catch {
       case _: UnsupportedOperationException =>
     }
@@ -126,6 +132,7 @@ abstract class Benchmark[T] {
   def pop_right(v: T): T
   def pop_left(v: T): T
   def size(v: T): Int
+  def update(v: T, i: Int, e: Any): T
 }
 
 object BenchmarkVector extends Benchmark[Vector[Any]] {
@@ -136,6 +143,7 @@ object BenchmarkVector extends Benchmark[Vector[Any]] {
   def pop_right(v: Vector[Any]) = v.pop_right()
   def pop_left(v: Vector[Any]) = v.pop_left()
   def size(v: Vector[Any]) = v.size()
+  def update(v: Vector[Any], i: Int, e: Any) = v.update(i, e);
 }
 
 object BenchmarkClojure extends Benchmark[PersistentVector] {
@@ -146,6 +154,7 @@ object BenchmarkClojure extends Benchmark[PersistentVector] {
   def pop_right(v: PersistentVector) = v.pop()
   def pop_left(v: PersistentVector) = throw new UnsupportedOperationException
   def size(v: PersistentVector) = v.count()
+  def update(v: PersistentVector, i: Int, e: Any) = v.assocN(i, e);
 }
 
 object BenchmarkScala extends Benchmark[ScalaVector[Any]] {
@@ -156,4 +165,5 @@ object BenchmarkScala extends Benchmark[ScalaVector[Any]] {
   def pop_right(v: ScalaVector[Any]) = v.dropRight(1)
   def pop_left(v: ScalaVector[Any]) = v.drop(1)
   def size(v: ScalaVector[Any]) = v.size
+  def update(v: ScalaVector[Any], i: Int, e: Any) = v.updated(i, e)
 }
